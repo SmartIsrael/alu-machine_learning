@@ -3,7 +3,7 @@ def determinant(matrix):
     if not isinstance(matrix, list) or not all(isinstance(row, list) for row in matrix):
         raise TypeError("matrix must be a list of lists")
 
-    if not matrix:  # Handle empty matrix case
+    if len(matrix) == 0:  # Handle empty matrix case
         return 1
 
     if len(matrix) != len(matrix[0]):
