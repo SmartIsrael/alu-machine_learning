@@ -1,93 +1,91 @@
 #!/usr/bin/env python3
-'''This class is a single neuron for binary classification'''
+"""Class Neuron that defines a single neuron performing binary classification
+"""
+
 
 import numpy as np
 
 
 class Neuron:
+    """ Class Neuron
     """
-        Initialize a Neuron performing binary classification.
-
-        Args:
-            nx (int): The number of input features to the neuron.
-        Raises:
-            TypeError: If nx is not an integer.
-            ValueError: If nx is less than 1.
-        """
 
     def __init__(self, nx):
+        """ Instantiation function of the neuron
+
+        Args:
+            nx (_type_): _description_
+
+        Raises:
+            TypeError: _description_
+            ValueError: _description_
+        """
         if not isinstance(nx, int):
             raise TypeError('nx must be an integer')
         if nx < 1:
-            raise ValueError('nx must be a positive integer')
-        self.__W = np.random.randn(1, nx)
+            raise ValueError('nx must be positive')
+
+        # initialize private instance attributes
+        self.__W = np.random.normal(size=(1, nx))
         self.__b = 0
         self.__A = 0
 
+        # getter function
     @property
     def W(self):
-        '''Getter for Weights'''
+        """Return weights"""
         return self.__W
 
     @property
     def b(self):
-        '''Getter for Bias'''
+        """Return bias"""
         return self.__b
 
     @property
     def A(self):
-        '''Getter for Activation function'''
+        """Return output"""
         return self.__A
 
     def forward_prop(self, X):
-        """
-        Calculates the forward propagation of the neuron.
+        """Calculates the forward propagation of the neuron
 
         Args:
-            X (numpy.ndarray): Input data of shape (nx, m), where
-            nx is the number of input features
-            and m is the number of examples.
+            X (numpy.ndarray): matrix with the input data of shape (nx, m)
 
         Returns:
-            numpy.ndarray: The activated output of the neuron (A).
+            numpy.ndarray: The output of the neural network.
         """
-        # Linear combination Z = W.X + b
-        Z = np.dot(self.__W, X) + self.__b
-
-        # Sigmoid activation function A = 1 / (1 + e^(-Z))
-        self.__A = 1 / (1 + np.exp(-Z))
-
+        z = np.matmul(self.__W, X) + self.__b
+        sigmoid = 1 / (1 + np.exp(-z))
+        self.__A = sigmoid
         return self.__A
 
     def cost(self, Y, A):
+        """ Compute the of the model using logistic regression
+
+        Args:
+            Y (np.array): True values
+            A (np.array): Prediction valuesss
+
+        Returns:
+            float: cost function
         """
-            Calculates the cost of the model using logistic regression.
-
-            Args:
-                Y (numpy.ndarray): Correct labels (1, m) for the input data.
-                A (numpy.ndarray): Activated output (1, m) for each example.
-
-            Returns:
-                float: The cost (cross-entropy loss).
-            """
-        m = Y.shape[1]
-        cost = - (1 / m) * np.sum(Y * np.log(A) +
-                                  (1 - Y) * np.log(1.0000001 - A))
+        # calculate
+        loss = - (Y * np.log(A) + (1 - Y) * np.log(1.0000001 - A))
+        cost = np.mean(loss)
         return cost
 
     def evaluate(self, X, Y):
-        '''This evaluates the Neuron
-            Args:
-                X (numpy.ndarray): Input data of shape (nx, m), where
-            nx is the number of input features
-            and m is the number of examples
-                Y (numpy.ndarray): Correct labels (1, m) for the input data.
+        """ Evaluate the cost function
 
-            Returns:
-                Prdiction output of y converted to probabilties between 0 and 1
-                cost between the lables
-        '''
-        A = self.forward_prop(X)
-        predictions = np.where(A >= 0.5, 1, 0)
-        cost = self.cost(Y, A)
-        return predictions, cost
+        Args:
+            X (np.array): Input array
+            Y (np.array): actual values
+
+        Returns:
+            tuple: Prediction and Cost
+        """
+        pred = self.forward_prop(X)
+        cost = self.cost(Y, pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        return (pred, cost)

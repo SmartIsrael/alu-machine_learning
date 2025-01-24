@@ -1,135 +1,130 @@
 #!/usr/bin/env python3
-'''This class is a single neuron for binary classification'''
+"""Class Neuron that defines a single neuron performing binary classification
+"""
+
 
 import numpy as np
 
 
 class Neuron:
+    """ Class Neuron
     """
-        Initialize a Neuron performing binary classification.
-
-        Args:
-            nx (int): The number of input features to the neuron.
-        Raises:
-            TypeError: If nx is not an integer.
-            ValueError: If nx is less than 1.
-        """
 
     def __init__(self, nx):
+        """ Instantiation function of the neuron
+
+        Args:
+            nx (int): number of features to be initialized
+
+        Raises:
+            TypeError: _description_
+            ValueError: _description_
+        """
         if not isinstance(nx, int):
             raise TypeError('nx must be an integer')
         if nx < 1:
-            raise ValueError('nx must be a positive integer')
-        self.__W = np.random.randn(1, nx)
+            raise ValueError('nx must be positive')
+
+        # initialize private instance attributes
+        self.__W = np.random.normal(size=(1, nx))
         self.__b = 0
         self.__A = 0
 
+        # getter function
     @property
     def W(self):
-        '''Getter for Weights'''
+        """Return weights"""
         return self.__W
 
     @property
     def b(self):
-        '''Getter for Bias'''
+        """Return bias"""
         return self.__b
 
     @property
     def A(self):
-        '''Getter for Activation function'''
+        """Return output"""
         return self.__A
 
     def forward_prop(self, X):
-        """
-        Calculates the forward propagation of the neuron.
+        """Calculates the forward propagation of the neuron
 
         Args:
-            X (numpy.ndarray): Input data of shape (nx, m), where
-            nx is the number of input features
-            and m is the number of examples.
+            X (numpy.ndarray): matrix with the input data of shape (nx, m)
 
         Returns:
-            numpy.ndarray: The activated output of the neuron (A).
+            numpy.ndarray: The output of the neural network.
         """
-        # Linear combination Z = W.X + b
-        Z = np.dot(self.__W, X) + self.__b
-
-        # Sigmoid activation function A = 1 / (1 + e^(-Z))
-        self.__A = 1 / (1 + np.exp(-Z))
-
+        z = np.matmul(self.__W, X) + self.__b
+        sigmoid = 1 / (1 + np.exp(-z))
+        self.__A = sigmoid
         return self.__A
 
     def cost(self, Y, A):
+        """ Compute the of the model using logistic regression
+
+        Args:
+            Y (np.array): True values
+            A (np.array): Prediction valuesss
+
+        Returns:
+            float: cost function
         """
-            Calculates the cost of the model using logistic regression.
-
-            Args:
-                Y (numpy.ndarray): Correct labels (1, m) for the input data.
-                A (numpy.ndarray): Activated output (1, m) for each example.
-
-            Returns:
-                float: The cost (cross-entropy loss).
-            """
-        m = Y.shape[1]
-        cost = - (1 / m) * np.sum(Y * np.log(A) +
-                                  (1 - Y) * np.log(1.0000001 - A))
+        # calculate
+        loss = - (Y * np.log(A) + (1 - Y) * np.log(1.0000001 - A))
+        cost = np.mean(loss)
         return cost
 
     def evaluate(self, X, Y):
-        '''This evaluates the Neuron
-            Args:
-                X (numpy.ndarray): Input data of shape (nx, m), where
-            nx is the number of input features
-            and m is the number of examples
-                Y (numpy.ndarray): Correct labels (1, m) for the input data.
+        """ Evaluate the cost function
 
-            Returns:
-                Prdiction output of y converted to probabilties between 0 and 1
-                cost between the lables
-        '''
-        A = self.forward_prop(X)
-        predictions = np.where(A >= 0.5, 1, 0)
-        cost = self.cost(Y, A)
-        return predictions, cost
+        Args:
+            X (_type_): _description_
+            Y (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        pred = self.forward_prop(X)
+        cost = self.cost(Y, pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        return (pred, cost)
 
     def gradient_descent(self, X, Y, A, alpha=0.05):
-        '''This functiong calculates the gradient descent of the neuron
+        """ Calculate one pass of gradient descent on the neuron
+
         Args:
-            X (numpy.ndarray): Input data of shape (nx, m), where
-            nx is the number of input features
-            and m is the number of examples
-            Y (numpy.ndarray): Correct labels (1, m) for the input data.
-            A (numpy.ndarray): Activated output (1, m) for each example.
-            alpha is the learning rate of the gradient descent
-        '''
-        m = Y.shape[1]
-        error = A - Y
-        dW = (1 / m) * (np.dot(error, np.transpose(X)))
-        db = (1 / m) * (np.sum(error))
-        self.__W = self.__W - (alpha * dW)
-        self.__b = self.__b - (alpha * db)
+            X (_type_): _description_
+            Y (_type_): _description_
+            A (_type_): _description_
+            alpha (float, optional): _description_. Defaults to 0.05.
+        """
+        dz = A - Y
+        m = X.shape[1]
+        dw = (1/m) * np.matmul(dz, X.T)
+        db = np.mean(dz)
+        self.__W -= alpha * dw
+        self.__b -= alpha * db
 
     def train(self, X, Y, iterations=5000, alpha=0.05):
-        '''This class trains the model
+        """ Train the neuron: finding the global minuminus of the cost function
+
         Args:
-            X is a numpy.ndarray with shape (nx, m)
-            that contains the input data
-            nx is the number of input features to the neuron
-            m is the number of examples
-            Y is a numpy.ndarray with shape (1, m)
-            that contains the correct labels for the input data
-            iterations is the number of iterations to train over
-            alpha is the learning rate
-        '''
+            X (np.array): _description_
+            Y (np.array): _description_
+            iterations (int, optional): _description_. Defaults to 5000.
+            alpha (float, optional): _description_. Defaults to 0.05.
+        """
         if not isinstance(iterations, int):
             raise TypeError('iterations must be an integer')
-        if iterations <= 0:
+        if iterations < 0:
             raise ValueError('iterations must be a positive integer')
         if not isinstance(alpha, float):
             raise TypeError('alpha must be a float')
-        if alpha <= 0:
+        if alpha < 0:
             raise ValueError('alpha must be positive')
+
         for _ in range(iterations):
-            self.__A = self.forward_prop(X)
-            self.gradient_descent(X, Y, self.__A, alpha)
+            A = self.forward_prop(X)
+            self.gradient_descent(X, Y, A, alpha)
         return self.evaluate(X, Y)

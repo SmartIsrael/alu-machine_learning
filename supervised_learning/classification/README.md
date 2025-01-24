@@ -1,1 +1,1 @@
-This is the readme file of the classification folder
+Readme for supervised learning classfication projects

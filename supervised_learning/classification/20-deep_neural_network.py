@@ -1,81 +1,115 @@
 #!/usr/bin/env python3
-"""
-    A class DeepNeuralNetwork that defines a deep neural
-    network performing binary classification
+""" Deep Neural Network
 """
 
 import numpy as np
 
 
 class DeepNeuralNetwork:
-    """
-    A class DeepNeuralNetwork
+    """ Class that defines a deep neural network performing binary
+        classification.
     """
 
     def __init__(self, nx, layers):
-        ''' DeepNeuralNetwork class constructor'''
+        """ Instantiation function
+
+        Args:
+            nx (int): number of input features
+            layers (list): representing the number of nodes in each layer of
+                           the network
+        """
         if not isinstance(nx, int):
-            raise TypeError("nx must be an integer")
+            raise TypeError('nx must be an integer')
         if nx < 1:
-            raise ValueError("nx must be a positive integer")
-        if not isinstance(layers, list) or len(layers) == 0:
-            raise TypeError("layers must be a list of positive integers")
+            raise ValueError('nx must be a positive integer')
+
+        if not isinstance(layers, list):
+            raise TypeError('layers must be a list of positive integers')
+        if len(layers) < 1:
+            raise TypeError('layers must be a list of positive integers')
 
         self.__L = len(layers)
         self.__cache = {}
         self.__weights = {}
-        self.nx = nx
-        self.layers = layers
 
-        # Initialize weights and biases and validate layers in one loop
         for i in range(self.__L):
             if not isinstance(layers[i], int) or layers[i] < 1:
-                raise TypeError("layers must be a list of positive integers")
-            if i == 0:
-                self.__weights["W1"] = (
-                    np.random.randn(layers[i], nx) * np.sqrt(2 / nx))
-            else:
-                self.__weights["W" + str(i + 1)] = np.random.randn(
-                    layers[i], layers[i - 1]
-                ) * np.sqrt(2 / layers[i - 1])
-            self.__weights["b" + str(i + 1)] = np.zeros((layers[i], 1))
+                raise TypeError('layers must be a list of positive integers')
 
-    # create the getter functions of the deep network
+            if i == 0:
+                # He et al. initialization
+                self.__weights['W' + str(i + 1)] = np.random.randn(
+                    layers[i], nx) * np.sqrt(2 / nx)
+            else:
+                # He et al. initialization
+                self.__weights['W' + str(i + 1)] = np.random.randn(
+                    layers[i], layers[i - 1]) * np.sqrt(2 / layers[i - 1])
+
+            # Zero initialization
+            self.__weights['b' + str(i + 1)] = np.zeros((layers[i], 1))
+
+    # add getter method
     @property
     def L(self):
-        ''' return the L attribute'''
+        """ Return layers in the neural network"""
         return self.__L
 
     @property
     def cache(self):
-        ''' return the cache attribute'''
+        """ Return dictionary with intermediate values of the network"""
         return self.__cache
 
     @property
     def weights(self):
-        ''' return the weights attribute'''
+        """Return weights and bias dictionary"""
         return self.__weights
 
     def forward_prop(self, X):
-        '''
-            Calculates the forward propagation of
-            the deep neural network
-        '''
-        self.__cache["A0"] = X
-        for i in range(self.__L):
-            W = self.__weights["W{}".format(i + 1)]
-            b = self.__weights["b{}".format(i + 1)]
-            A = self.__cache["A{}".format(i)]
-            Z = np.matmul(W, A) + b
-            self.__cache["A{}".format(i + 1)] = 1 / (1 + np.exp(-Z))
+        """ Forward propagation
 
-        return self.__cache["A{}".format(self.__L)], self.__cache
+        Args:
+            X (numpy.array): Input array with
+            shape (nx, m) = (featurs, no of examples)
+        """
+        self.cache["A0"] = X
+        # print(self.cache)
+        for i in range(1, self.L+1):
+            # extract values
+            W = self.weights['W'+str(i)]
+            b = self.weights['b'+str(i)]
+            A = self.cache['A'+str(i - 1)]
+            # do forward propagation
+            z = np.matmul(W, A) + b
+            sigmoid = 1 / (1 + np.exp(-z))  # this is the output
+            # store output to the cache
+            self.cache["A"+str(i)] = sigmoid
+        return self.cache["A"+str(i)], self.cache
 
     def cost(self, Y, A):
-        '''
-            Calculates the cost of the model
-        '''
-        m = Y.shape[1]
-        cost = - (1 / m) * np.sum(Y * np.log(A) +
-                                  (1 - Y) * np.log(1.0000001 - A))
+        """ Calculate the cost of the Neural Network.
+
+        Args:
+            Y (numpy.array): Actual values
+            A (numpy.array): predicted values of the neural network
+
+        Returns:
+            _type_: _description_
+        """
+        loss = -(Y * np.log(A) + (1 - Y) * np.log(1.0000001 - A))
+        cost = np.mean(loss)
         return cost
+
+    def evaluate(self, X, Y):
+        """ Evaluate the neural network
+
+        Args:
+            X (numpy.array): Input array
+            Y (numpy.array): Actual values
+
+        Returns:
+            prediction, cost: return predictions and costs
+        """
+        self.forward_prop(X)
+        # get output of the neural network from the cache
+        output = self.cache.get("A" + str(self.L))
+        return np.where(output >= 0.5, 1, 0), self.cost(Y, output)
